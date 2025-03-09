@@ -1,4 +1,4 @@
-import _init_path
+from tools import _init_path
 import argparse
 import datetime
 import glob
@@ -15,7 +15,7 @@ import torch.nn as nn
 from tensorboardX import SummaryWriter
 import tqdm
 
-from eval_utils import eval_utils
+from tools.eval_utils import eval_utils
 from pcdet.config import cfg, cfg_from_list, cfg_from_yaml_file, log_config_to_file
 from pcdet.datasets import build_dataloader
 from pcdet.models import build_network
@@ -252,7 +252,7 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, args, dist_test=Fal
 
         # print("### batch_dict voxels shape", batch_dict[key].shape)
         batch_dict[key].requires_grad = True
-        
+
         if key=='voxels':
             g = torch.zeros_like(batch_dict[key][:, :, :3]).to(key_origin.device)
         else:
@@ -327,7 +327,7 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, args, dist_test=Fal
                     # print('### perturbation', perturbation)
                     points_valid[:, :3] = points_origin[points_valid[:, -1].astype(int), :3] + perturbation
 
-                    # limit the points in the point cloud range 
+                    # limit the points in the point cloud range
                     points_valid[points_valid[:, 0]>=point_cloud_range[3], 0] = point_cloud_range[3] - 1e-6
                     points_valid[points_valid[:, 1]>=point_cloud_range[4], 1] = point_cloud_range[4] - 1e-6
                     points_valid[points_valid[:, 2]>=point_cloud_range[5], 2] = point_cloud_range[5] - 1e-6
@@ -471,7 +471,7 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, args, dist_test=Fal
                     points = points[mask]
                 else:
                     raise NotImplementedError()
-                
+
                 try:
                     voxels, coordinates, num_points = voxel_generator_defense.generate(points)
                 except:
@@ -550,6 +550,9 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, args, dist_test=Fal
                 save_points = points_valid[:, :4]
             else:
                 save_points = batch_dict[key][:, 1:].detach().cpu().numpy()
+
+            # print('attempt to save', type(save_points))
+            # save_points.tofile(output_path)
 
             with open(output_path, 'w') as f:
                 save_points.tofile(f)
@@ -723,7 +726,7 @@ def main():
     )
 
     model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=test_set)
-    
+
     # load checkpoint
     model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=dist_test)
     model.cuda()
@@ -738,7 +741,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
